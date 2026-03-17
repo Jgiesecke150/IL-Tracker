@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Illinois 2026 Primary — Live Results Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --text: #f0ece4;
+    --muted: #6b6560;
+    --dem: #4a90d9;
+    --dem-bg: rgba(74,144,217,0.12);
+    --rep: #d94a4a;
+    --rep-bg: rgba(217,74,74,0.12);
+    --non: #8a8a6a;
+    --non-bg: rgba(138,138,106,0.12);
+    --green: #4aad6e;
+    --amber: #d9a04a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .header-left h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .header-left p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .live-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 2px;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--rep);
+    flex-shrink: 0;
+  }
+  .live-dot.live {
+    background: var(--green);
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .refresh-btn:hover { border-color: var(--muted); background: var(--surface); }
+  .refresh-btn:disabled { opacity: 0.4; cursor: default; }
+  .last-updated {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 32px 60px;
+  }
+
+  .section { margin-bottom: 36px; }
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .race-card {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .race-card:hover { border-color: #3a3a3a; }
+  .race-card.has-data { border-color: #2a2a2a; }
+
+  .race-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .race-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+  }
+  .race-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .pct-in {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .party-tag {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .tag-d { background: var(--dem-bg); color: var(--dem); border: 1px solid rgba(74,144,217,0.25); }
+  .tag-r { background: var(--rep-bg); color: var(--rep); border: 1px solid rgba(217,74,74,0.25); }
+  .tag-n { background: var(--non-bg); color: var(--non); border: 1px solid rgba(138,138,106,0.25); }
+
+  .candidates { display: flex; flex-direction: column; gap: 6px; }
+  .cand-row { display: flex; align-items: center; gap: 10px; }
+  .cand-name {
+    font-size: 12px;
+    color: #9a9590;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cand-name.leader { color: var(--text); }
+  .bar-track {
+    flex: 2;
+    height: 3px;
+    background: #222;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .bar-d { background: var(--dem); }
+  .bar-r { background: var(--rep); }
+  .bar-n { background: var(--non); }
+  .cand-pct {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 38px;
+    text-align: right;
+  }
+  .cand-pct.leader { color: var(--text); }
+  .leader-arrow { color: var(--green); font-size: 9px; margin-left: 3px; }
+
+  .awaiting {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    letter-spacing: 0.03em;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 16px 16px 14px; }
+    main { padding: 20px 16px 40px; }
+    .header-left h1 { font-size: 20px; }
+    .bar-track { flex: 1.2; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Illinois 2026 Primary</h1>
+    <p>Live results tracker &mdash; March 17, 2026</p>
+  </div>
+  <div class="header-right">
+    <div class="live-pill">
+      <span class="live-dot" id="live-dot"></span>
+      <span id="status-text">Polls close 7pm CT</span>
+    </div>
+    <button class="refresh-btn" id="refresh-btn" onclick="fetchAll()">↻ Refresh</button>
+  </div>
+</header>
+
+<main>
+  <div id="races-container"></div>
+  <div class="last-updated" id="last-updated" style="text-align:right; margin-top:8px;"></div>
+</main>
+
+<footer>
+  Sources: Chicago Tribune &bull; Cook County Clerk &bull; Chicago Elections &bull; AP via NBC/PBS &bull; Auto-refreshes every 5 min after 7pm CT
+</footer>
+
+<script>
+const RACES = [
+  { key:"us-senate-d",        label:"U.S. Senate",                             party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-us-senate/" },
+  { key:"us-senate-r",        label:"U.S. Senate",                             party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-us-senate/" },
+  { key:"comptroller-d",      label:"Comptroller",                             party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-comptroller/" },
+  { key:"congress-2-d",       label:"U.S. House District 2",                   party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-2nd-congressional-district-of-illinois/" },
+  { key:"congress-7-d",       label:"U.S. House District 7",                   party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-7th-congressional-district-of-illinois/" },
+  { key:"congress-8-d",       label:"U.S. House District 8",                   party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-8th-congressional-district-of-illinois/" },
+  { key:"congress-9-d",       label:"U.S. House District 9",                   party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-9th-congressional-district-of-illinois/" },
+  { key:"cook-president-d",   label:"Cook County Board President",             party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-cook-county-president/" },
+  { key:"cook-assessor-d",    label:"Cook County Assessor",                    party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-cook-county-assessor/" },
+  { key:"cook-review2-d",     label:"Cook County Board of Review D2",          party:"D", searchQuery:"Cook County Board of Review District 2 Steele Nicholson primary results 2026" },
+  { key:"cook-comm2-d",       label:"Cook County Commissioner D2",             party:"D", searchQuery:"Cook County Commissioner District 2 Michael Scott Jr Andre Smith primary results 2026" },
+  { key:"cook-comm5-d",       label:"Cook County Commissioner D5",             party:"D", searchQuery:"Cook County Commissioner District 5 Kisha McCaskill Kiana Belcher primary results 2026" },
+  { key:"cook-comm6-d",       label:"Cook County Commissioner D6",             party:"D", searchQuery:"Cook County Commissioner District 6 primary results 2026 Bolling-Franklin Shahed" },
+  { key:"cook-comm8-d",       label:"Cook County Commissioner D8",             party:"D", searchQuery:"Cook County Commissioner District 8 primary results 2026" },
+  { key:"cook-comm9-d",       label:"Cook County Commissioner D9",             party:"D", searchQuery:"Cook County Commissioner District 9 Maggie Trevor primary results 2026" },
+  { key:"cook-comm12-d",      label:"Cook County Commissioner D12",            party:"D", searchQuery:"Cook County Commissioner District 12 primary results 2026 Granato Nugent Pawar Waguespack" },
+  { key:"cook-comm13-d",      label:"Cook County Commissioner D13",            party:"D", searchQuery:"Cook County Commissioner District 13 Josina Morita primary results 2026" },
+  { key:"cook-comm15-d",      label:"Cook County Commissioner D15",            party:"D", searchQuery:"Cook County Commissioner District 15 Ted Mason primary results 2026" },
+  { key:"cook-comm16-d",      label:"Cook County Commissioner D16",            party:"D", searchQuery:"Cook County Commissioner District 16 Frank Aguilar Miranda Hernandez primary results 2026" },
+  { key:"cook-comm17-d",      label:"Cook County Commissioner D17",            party:"D", searchQuery:"Cook County Commissioner District 17 Precious Brady-Davis primary results 2026" },
+  { key:"dupage-clerk-d",     label:"DuPage County Clerk",                     party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-dupage-county-clerk/" },
+  { key:"dupage-sheriff-d",   label:"DuPage County Sheriff",                   party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-dupage-county-sheriff/" },
+  { key:"dupage-sheriff-r",   label:"DuPage County Sheriff",                   party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-dupage-county-sheriff/" },
+  { key:"dupage-board5-d",    label:"DuPage County Board D5 (full term)",      party:"D", searchQuery:"DuPage County Board District 5 full term Democratic primary 2026 results" },
+  { key:"dupage-forest2",     label:"DuPage Forest Preserve District 2",       party:"N", searchQuery:"DuPage Forest Preserve District 2 primary 2026 election results" },
+  { key:"senate-6-d",         label:"IL State Senate Dist. 6",                 party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-senate-district-6/" },
+  { key:"senate-9-d",         label:"IL State Senate Dist. 9",                 party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-senate-district-9/" },
+  { key:"senate-33-r",        label:"IL State Senate Dist. 33",                party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-senate-district-33/" },
+  { key:"senate-59-r",        label:"IL State Senate Dist. 59",                party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-senate-district-59/" },
+  { key:"house-8-d",          label:"IL State House Dist. 8",                  party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-8/" },
+  { key:"house-40-d",         label:"IL State House Dist. 40",                 party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-40/" },
+  { key:"house-52-d",         label:"IL State House Dist. 52",                 party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-52/" },
+  { key:"house-84-d",         label:"IL State House Dist. 84",                 party:"D", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-84/" },
+  { key:"house-89-r",         label:"IL State House Dist. 89",                 party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-89/" },
+  { key:"house-94-r",         label:"IL State House Dist. 94",                 party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-94/" },
+  { key:"house-109-r",        label:"IL State House Dist. 109",                party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-109/" },
+  { key:"house-116-r",        label:"IL State House Dist. 116",                party:"R", url:"https://www.chicagotribune.com/2026/03/17/2026-primary-day-election-results-illinois-state-house-district-116/" },
+];
+
+const SECTIONS = [
+  { title:"U.S. Senate",                    keys:["us-senate-d","us-senate-r"] },
+  { title:"Statewide",                      keys:["comptroller-d"] },
+  { title:"U.S. Congress — Democratic",     keys:["congress-2-d","congress-7-d","congress-8-d","congress-9-d"] },
+  { title:"Cook County — Countywide",       keys:["cook-president-d","cook-assessor-d","cook-review2-d"] },
+  { title:"Cook County Commissioners (D)",  keys:["cook-comm2-d","cook-comm5-d","cook-comm6-d","cook-comm8-d","cook-comm9-d","cook-comm12-d","cook-comm13-d","cook-comm15-d","cook-comm16-d","cook-comm17-d"] },
+  { title:"DuPage County",                  keys:["dupage-clerk-d","dupage-sheriff-d","dupage-sheriff-r","dupage-board5-d","dupage-forest2"] },
+  { title:"IL State Senate",                keys:["senate-6-d","senate-9-d","senate-33-r","senate-59-r"] },
+  { title:"IL State House",                 keys:["house-8-d","house-40-d","house-52-d","house-84-d","house-89-r","house-94-r","house-109-r","house-116-r"] },
+];
+
+let raceData = {};
+RACES.forEach(r => { raceData[r.key] = { pct: null, candidates: [] }; });
+
+function renderAll() {
+  const container = document.getElementById('races-container');
+  let html = '';
+  SECTIONS.forEach(sec => {
+    html += `<div class="section"><div class="section-label">${sec.title}</div>`;
+    sec.keys.forEach(key => {
+      const race = RACES.find(r => r.key === key);
+      const data = raceData[key];
+      const tagClass = race.party === 'D' ? 'tag-d' : race.party === 'R' ? 'tag-r' : 'tag-n';
+      const partyLabel = race.party === 'D' ? 'Dem' : race.party === 'R' ? 'Rep' : 'Nonpartisan';
+      const barClass = race.party === 'D' ? 'bar-d' : race.party === 'R' ? 'bar-r' : 'bar-n';
+      const hasData = data.candidates && data.candidates.length > 0;
+      html += `<div class="race-card${hasData ? ' has-data' : ''}">
+        <div class="race-header">
+          <span class="race-title">${race.label}</span>
+          <div class="race-meta">
+            ${data.pct !== null ? `<span class="pct-in">${data.pct}% reporting</span>` : ''}
+            <span class="party-tag ${tagClass}">${partyLabel}</span>
+          </div>
+        </div>`;
+      if (hasData) {
+        const max = Math.max(...data.candidates.map(c => c.pct));
+        html += `<div class="candidates">`;
+        data.candidates.forEach(c => {
+          const isLeader = c.pct === max && max > 0;
+          html += `<div class="cand-row">
+            <span class="cand-name${isLeader ? ' leader' : ''}">${c.name}${isLeader ? '<span class="leader-arrow">▲</span>' : ''}</span>
+            <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${c.pct}%"></div></div>
+            <span class="cand-pct${isLeader ? ' leader' : ''}">${c.pct > 0 ? c.pct + '%' : '—'}</span>
+          </div>`;
+        });
+        html += `</div>`;
+      } else {
+        html += `<div class="awaiting">Awaiting results — polls close 7pm CT</div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    `Last updated: ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})} CT`;
+}
+
+async function fetchRace(race) {
+  try {
+    const prompt = race.url
+      ? `Fetch election results from this URL. Return ONLY valid JSON, no other text:
+{"pct_reporting": <number or null>, "candidates": [{"name": "<full name>", "pct": <number>}]}
+Sort by vote pct descending. Top 6 max. ${race.party === 'D' ? 'Democratic' : race.party === 'R' ? 'Republican' : 'All'} candidates only. If no results yet return {"pct_reporting": null, "candidates": []}.
+URL: ${race.url}
+Party: ${race.party === 'D' ? 'Democratic' : race.party === 'R' ? 'Republican' : 'Nonpartisan'}
+Race: ${race.label}`
+      : `Search for 2026 Illinois primary election night results for: ${race.searchQuery}
+Also check electionnight.cookcountyclerkil.gov and chicagoelections.gov/elections/results.
+Return ONLY valid JSON, no other text:
+{"pct_reporting": <number or null>, "candidates": [{"name": "<full name>", "pct": <number>}]}
+Sort by vote pct descending. Top 6 max. If no results yet return {"pct_reporting": null, "candidates": []}.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+        tools: [{ type: "web_search_20250305", name: "web_search" }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) {
+      const parsed = JSON.parse(m[0]);
+      raceData[race.key] = { pct: parsed.pct_reporting, candidates: parsed.candidates || [] };
+    }
+  } catch(e) { console.warn('fetch error', race.key, e); }
+}
+
+async function fetchAll() {
+  const btn = document.getElementById('refresh-btn');
+  const dot = document.getElementById('live-dot');
+  const statusText = document.getElementById('status-text');
+  btn.disabled = true;
+  statusText.textContent = 'Fetching...';
+
+  const batches = [];
+  for (let i = 0; i < RACES.length; i += 4) batches.push(RACES.slice(i, i+4));
+  for (const batch of batches) {
+    await Promise.all(batch.map(r => fetchRace(r)));
+    renderAll();
+  }
+
+  const hasData = Object.values(raceData).some(d => d.candidates && d.candidates.length > 0);
+  if (hasData) { dot.classList.add('live'); statusText.textContent = 'Live'; }
+  else statusText.textContent = 'Polls close 7pm CT';
+  btn.disabled = false;
+}
+
+renderAll();
+
+const now = new Date();
+const target = new Date(); target.setHours(19, 2, 0, 0);
+if (now < target) {
+  setTimeout(() => { fetchAll(); setInterval(fetchAll, 5 * 60 * 1000); }, target - now);
+} else {
+  fetchAll();
+  setInterval(fetchAll, 5 * 60 * 1000);
+}
+</script>
+</body>
+</html>
